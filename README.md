@@ -1,28 +1,9 @@
 # Customers Transactions Analyisi Using Analytical SQL
+# Overview
+Customers has purchasing transaction that we shall be monitoring to get intuition behind each customer behavior to target the customers in the most efficient and proactive way, to increase sales/revenue, improve customer retention and decrease churn.
+# Objective
+This case study offers a comprehensive analysis of customer transactions, aiming to provide actionable insights for businesses to improve their marketing strategies, inventory management, customer retention, and pricing.
+# Dataset
+- Online Retail: This dataset consists of 12,858 rows of retail transaction data about customer purchases with columns such as customer IDs,invoice numbers, stock codes, quantities, dates, prices and countries.
+- Customers: Consists of 574,396 rows of daily transactions data, this dataset provides insights into individual customer behaviors including purchase dates and amounts.
 
-## Project Objective:
-
-The goal of this project is to delve into customer purchasing transactions using Analytical SQL techniques, aiming to extract actionable insights that can drive business growth, enhance customer retention, and optimize revenue generation.
-
-## Data Overview:
-
-The project utilizes two main datasets stored in the **Customers Data** folder:
-
-- **OnlineRetail**: This dataset encompasses 12,858 rows of retail transaction data, detailing customer purchases with information such as invoice numbers, stock codes, quantities, dates, prices, customer IDs, and countries.
-    
-- **Customers**: Comprising 574,396 rows of daily purchasing transactions data, this dataset provides insights into individual customer behaviors including purchase dates and amounts.
-
-
-## Project Files and Deliverables:
-
-- **Used Data Folder**: Stores exported data resulting from various analysis methods.
-- **Customers Transactions Analysis Report**: Presents the project's findings, including analytical queries, insights, and conclusions.
-- **Dataset Folder**: Contains dataset used for analysis
-- **SQL Queries File**: A comprehensive .sql file containing queries with clear annotations and comments for reference.
-
-## Tools and Technologies Utilized:
-
-- SQL and Analytical SQL Functions
-- Common Table Expressions (CTEs) and Window Functions
-- Toad
-- Excel For Charts
