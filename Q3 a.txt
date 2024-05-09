@@ -1,0 +1,36 @@
+A)	The maximum number of consecutive days a customer made purchases:
+with CTE as (
+    --  a row number to each purchase for every customer, ordered by purchase date
+    select 
+        cust_id,
+        calendar_dt ,
+        row_number() over (partition by  cust_id order by calendar_dt) as rankk
+    from customers
+),
+consecutive_days as (
+    -- Calculate the difference between the purchase date and its row number to identify consecutive purchases(the consective purchases will have the same group id )
+    select 
+        cust_id,
+        calendar_dt,
+        rankk,
+        calendar_dt - rankk AS group_id  
+    from CTE
+),
+grouped_consecutive_days as (
+    -- group consecutive purchases by customer and group id
+    select 
+        cust_id,
+        group_id,
+        min(calendar_dt) as start_date,
+        max(calendar_dt) as end_date,
+        count(*) as consecutive_days
+    from consecutive_days
+    group by cust_id, group_id
+)
+-- Select the maximum consecutive days for each customer
+select 
+    cust_id,
+    max(consecutive_days) as max_consecutive_days
+from grouped_consecutive_days
+group by cust_id
+order by cust_id ;

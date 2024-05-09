@@ -1,0 +1,31 @@
+B)	On average, How many days/transactions does it take a customer to reach a spent threshold of 250 L.E?
+-- CTE to calculate cumulative spending for each customer over time
+with cumulative_spending as (
+    select 
+        cust_id,
+        calendar_dt,
+        amt_LE,
+        -- Calculate the total spending for each customer at each transaction
+        sum(amt_LE) over (partition by  cust_id order by calendar_dt) as total_spending,
+        -- Identify the first transaction date for each customer
+        first_value(calendar_dt) over (partition by  cust_id order by calendar_dt) as first_transaction_date,
+        -- Calculate the cumulative count of transactions for each customer
+       count(*) over(partition by cust_id order by calendar_dt) as total_transactions
+    from customers
+),
+-- CTE to calculate the number of days it took for each customer to reach a total spending of 250
+to_reach as (
+        select 
+     distinct cust_id , 
+     min(total_transactions) over (partition by cust_id) as  transactions_to_reach_250, 
+     min(calendar_dt - first_transaction_date) over (partition by cust_id) as days_to_reach_250
+    from cumulative_spending
+    where total_spending >= 250
+    order by cust_id asc
+
+)
+-- Main query to calculate the avg number of days and transactions it took each customer to reach 250 in total spending
+select 
+    avg(days_to_reach_250) as avg_days_to_reach_250,
+    avg(transactions_to_reach_250) as avg_transactions_to_reach_250
+from to_reach;

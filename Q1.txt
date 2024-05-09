@@ -1,0 +1,137 @@
+1) Identifying Seasonal Trends in Revenue:  
+with cte as (
+-- Select distinct month-year combinations from the 'InvoiceDate' column and calculate total revenue for each month-year combination
+    select distinct
+        to_char(to_date(InvoiceDate, 'MM/DD/YYYY HH24:MI'), 'YYYY-MM') as month,
+-- Calculate monthly revenue by summing up Quantity * Price over each month-year partition
+        sum(Quantity * Price) over (partition by to_char(to_date(InvoiceDate, 'MM/DD/YYYY HH24:MI'), 'YYYY-MM')) as monthly_revenue
+    from tableRetail
+)
+-- Main Query
+Select
+    -- Select the month and its corresponding monthly revenue from cte
+    month,
+    monthly_revenue,
+-- Assign a rank to each month based on its revenue (higher revenue gets lower rank)
+    rank() over (order by monthly_revenue desc) as month_rank
+from cte 
+-- Order the result set by the month rank in ascending order
+order by month_rank;
+
+.....................................................................................
+2) The Highest Single Transaction value for each customer:
+with cte as (
+-- select relevant columns and calculate the transaction value for each invoice 
+    select 
+        invoice,
+        customer_id,
+        quantity * price as transaction_value,
+        -- assign a row number for each row within each partition of 'customer_id', ordering them by  the transaction value for each invoice for him in descending order
+        row_number() over (partition by customer_id order by quantity * price desc) as row_num
+    from tableretail
+)
+select 
+    invoice,
+    customer_id,
+    transaction_value AS max_single_transaction_value
+from  cte
+ /* filter the results to only include rows where the row number is equal to 1,
+meaning it selects only the invoices with the highest  transaction value for each customer 
+and order the results by the transaction_value desc 
+meaning the first row represents the customer with the highest single transaction values */
+where row_num = 1
+    order by max_single_transaction_value desc;
+.........................................
+3) Identifying price variance across countries:
+-- This cte calculates the average, maximum, and minimum prices for each stock code in each country 
+with cte as (
+    select 
+        country,
+        stockcode,
+        avg(price) as avg_price,
+        max(price) as max_price,
+        min(price) as min_price
+    from tableretail
+    group by country, stockcode
+)
+-- Main query to select country, stock code, average price, maximum price, minimum price, and rank stock codes based on average price within each country
+SELECT 
+    country,
+    stockcode,
+    avg_price,
+    max_price,
+    min_price,
+    row_number() over (partition by country order by avg_price desc) as avg_price_rank
+from cte;
+..................................
+4)	Customer Lifetime Cycle:
+-- CTE to calculate customer transactions and activity
+with customer_activity as (
+    -- calculate total spent, first purchase date, and last purchase date,total_transactions and unique products for each customer
+    select 
+        customer_id,
+        sum(price) as total_spent, -- cumulative amount of money spent by each customer
+        min(to_date(invoicedate, 'MM/DD/YYYY HH24:MI')) as first_transaction_date,
+        max(to_date(invoicedate, 'MM/DD/YYYY HH24:MI')) as last_transaction_date,
+        count(distinct invoice) as total_transactions,
+        count(distinct stockcode) as unique_products_purchased
+    from tableretail
+    group by  customer_id
+)
+-- Main query 
+select 
+    customer_id,
+    total_spent,
+    first_transaction_date,
+    last_transaction_date,
+    total_transactions,
+    unique_products_purchased,
+    round(total_spent / total_transactions, 2) as avg_transaction_value,
+    --Duration of the customer's lifetime in days (last purchase date - first purchase date)
+   round( (last_transaction_date - first_transaction_date)) as customer_lifetime_days
+from customer_activity
+-- Order the results by total transactions for each customer desc which means the first row is the most active customer
+order by total_transactions desc;
+....................................
+5)	Best-Selling Products:
+-- CTE to calculate total quantity sold for each product
+with product_sales as (
+    select 
+        stockcode,
+        sum(quantity) as total_quantity_sold
+    from tableretail
+    group by stockcode
+)
+-- main query to rank products based on total quantity sold
+select 
+    stockcode,
+    total_quantity_sold,
+    rank() over (order by total_quantity_sold desc) as sales_rank
+from product_sales
+order by total_quantity_sold desc;
+..........................................
+6)	Cross-Selling Analysis:
+-- CTE to generate pairs of co-purchased products
+with cte as (
+    -- selects pairs of products that are purchased together, avoiding duplicate pairs
+    select 
+        a.stockcode as product_A,  -- The first product in the pair
+        b.stockcode AS product_B,  -- The second product in the pair
+        count(*) as co_purchase_count  -- Counts the number of times the pair purchased  together
+    from  tableretail a
+    join tableretail b 
+on a.invoice = b.invoice and a.stockcode < b.stockcode 
+        /* Joins the table with itself to find co-purchased items, ensuring product_1 < product_2
+        using a.stockcode < b.stockcode ensures that each pair of products is only counted once. 
+        This condition prevents duplicate pairs where the same two products are swapped in positions
+         (a.StockCode and b.StockCode are interchanged) */
+    group by a.stockcode, b.stockcode  -- group the results by the two products in each pair
+)
+select 
+    product_A,  
+    product_B,  
+    co_purchase_count, 
+    row_number() over (order by co_purchase_count desc) as rank  
+        -- assigns a rank to each pair based on their frequency
+from cte
+order by co_purchase_count desc;  -- orders the results by the frequency of co-purchase counts
